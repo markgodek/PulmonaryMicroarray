@@ -1,10 +1,14 @@
-library(GEOquery)
-library(ggplot2)
-library(pheatmap)
-library(dplyr)
-library(ggrepel)
-library(data.table)
-library(limma)
+packages <- c("GEOquery", "dplyr", "limma",'ggplot2','pheatmap','ggrepel','data.table')
+
+package.check <- lapply(
+  packages,
+  FUN = function(x) {
+    if (!require(x, character.only = TRUE)) {
+      BiocManager::install(x)
+      library(x, character.only = TRUE)
+    }
+  }
+)
 
 #data from this study - https://pubmed.ncbi.nlm.nih.gov/23783374/
 #reference - https://sbc.shef.ac.uk/geo_tutorial/tutorial.nb.html
