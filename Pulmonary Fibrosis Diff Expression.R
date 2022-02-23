@@ -1,9 +1,3 @@
----
-title: "Pulmonary Fibrosis Differential Expression"
-output: html_document
----
-
-```{r setup, include=FALSE}
 packages <- c("GEOquery", "dplyr", "limma",'ggplot2','pheatmap','ggrepel','data.table')
 
 package.check <- lapply(
@@ -15,46 +9,28 @@ package.check <- lapply(
     }
   }
 )
-```
 
-retrieve the microarray data and store the first dataset
+#data from this study - https://pubmed.ncbi.nlm.nih.gov/23783374/
+#reference - https://sbc.shef.ac.uk/geo_tutorial/tutorial.nb.html
 
-
-
-```{r retrieval, echo=TRUE}
+#retrieve the microarray data and store the first dataset
 my_id <- "GSE32537"
 gse <- getGEO(my_id)
 gse <- gse[[1]]
 
+
 sampleInfo <- pData(gse) ## get sample information
 anno <- fData(gse) ## get gene annotation data
-```
 
-## Boxplot
-
-Plot the expression data in a boxplot to determine the scale of the data and if it will need to be normalized.
-
-```{r boxplot, echo=TRUE}
+#check if the data is normalized, distributions should be similar
 boxplot(exprs(gse),outline=FALSE)
-```
 
-## Heatmap
-
-Calculate correlation between each pair of samples and plot them on a heatmap and see if there is any clustering.
-There appears to be some clustering of samples with control diagnosis.
-
-```{r heatmap, echo=TRUE}
+#There looks to be some clustering of samples with control diagnosis
 heatMapSampleInfo <-  dplyr::select(sampleInfo, sample=geo_accession, diagnosis=`final diagnosis:ch1`)
 corMatrix <- cor(exprs(gse),use="c")
 rownames(heatMapSampleInfo) <- colnames(corMatrix)
 pheatmap(corMatrix, annotation_col=heatMapSampleInfo)  
-```
 
-## Principal Component Analysis
-
-The principal component analysis shows PC1 can explain the difference between control and other diagnoses as control clusters to the right and IPF/UIP and others cluster to the left.
-
-```{r PCA, echo=FALSE}
 #I hypothesize age and pack years of smoking have the biggest impact on diagnosis, so I'd like to include them in PCA
 sampleInfo <- dplyr::select(sampleInfo, sample=geo_accession, age=`age:ch1`, pack_years=`pack years:ch1`, diagnosis=`final diagnosis:ch1`)
 
@@ -63,13 +39,9 @@ sampleInfo <- dplyr::select(sampleInfo, sample=geo_accession, age=`age:ch1`, pac
 pca <- prcomp(t(exprs(gse)))
 cbind(sampleInfo, pca$x) %>%
   ggplot(aes(x = PC1, y= PC2, col=diagnosis, label = paste("Sample", sample))) + geom_point() + geom_text_repel(size = 2) 
-```
 
-## Volcano Plot
 
-Plot the fold change in expression on the X-ais and log-odds significance on the Y-axis expressed by the B statistic.
 
-```{r Volcano, echo=TRUE}
 #create model and rename columns for diagnoses
 design <- model.matrix(~0+sampleInfo$diagnosis)
 colnames(design) <- c("control", "COP", "DIP", "IPF.UIP","NSIP", "RB.ILD", "UF")
@@ -122,10 +94,3 @@ print(volcanoPlot)
 # Print top 20 most significant differentially expressed genes
 head(volcanoPlot$data, 20)
 
-```
-
-## References
-
-data - https://pubmed.ncbi.nlm.nih.gov/23783374/
-
-tutorial - https://sbc.shef.ac.uk/geo_tutorial/tutorial.nb.html
